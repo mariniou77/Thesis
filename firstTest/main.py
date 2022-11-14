@@ -1,3 +1,5 @@
+# https://www.geeksforgeeks.org/python-arima-model-for-time-series-forecasting/
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
@@ -23,4 +25,7 @@ df = df_Unleaded95[["date",
 df.set_index('date', inplace=True)
 
 print(df.head(30))
+
+plt.plot(df[["date"]], df["unleaded95"])
+plt.xticks(rotation=90)
 
