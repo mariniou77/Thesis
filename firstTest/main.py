@@ -19,7 +19,7 @@ df = df[["nomos",
 
 df_Unleaded95 = df.loc[df['nomos'] == 1]
 
-print(df_Unleaded95)
+print(df_Unleaded95.head(30))
 
 df_Unleaded95.plot(x='date', y='unleaded95')
 
