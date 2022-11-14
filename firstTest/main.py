@@ -1,8 +1,6 @@
-# https://www.geeksforgeeks.org/python-arima-model-for-time-series-forecasting/
-
 import pandas as pd
-from statsmodels.tsa.stattools import adfuller
 import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import adfuller
 
 df = pd.read_csv("fuel_prices.csv", low_memory=False)
 
@@ -20,9 +18,9 @@ df = df[["nomos",
          "perifereia"]]
 
 df_Unleaded95 = df.loc[df['nomos'] == 1]
+df = df_Unleaded95[["date",
+                    "unleaded95"]]
+df.set_index('date', inplace=True)
 
-print(df_Unleaded95)
+print(df.head(30))
 
-df_Unleaded95.plot(x='date', y='unleaded95')
-
-plt.show()
