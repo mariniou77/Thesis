@@ -1,6 +1,7 @@
 # https://www.geeksforgeeks.org/python-arima-model-for-time-series-forecasting/
 
 import pandas as pd
+from statsmodels.tsa.stattools import adfuller
 import matplotlib.pyplot as plt
 
 df = pd.read_csv("fuel_prices.csv", low_memory=False)
