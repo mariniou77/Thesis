@@ -29,7 +29,7 @@ print(df_Unleaded95.head(30))
 # to geniko plot ton timon gia ton nomo atikis ana ta xronia
 # basi tou plot tsekaro an einai stationary ta data mou
 df_Unleaded95.plot()
-plt.show()
+# plt.show()
 
 # gia na eimai sigouros gia to stationary tsekaro to p-value < 0.05 (null hypothesis)
 result = adfuller(df_Unleaded95['unleaded_95'])
@@ -90,7 +90,7 @@ print(dict(zip(['adf',
 fig1 = plot_acf(df_Unleaded95['1difference'].dropna())
 plt.show()
 fig2 = plot_pacf(df_Unleaded95['1difference'].dropna())
-plt.show()
+# plt.show()
 
 
 # fig1 = plot_acf(df_Unleaded95['Seasonal_Difference'].dropna())
@@ -99,10 +99,10 @@ plt.show()
 # plt.show()
 
 model = SARIMAX(df_Unleaded95['unleaded_95'], order=(
-    2, 1, 2))
+    1, 2, 1), seasonal_order=(1, 0, 0, 12))
 result = model.fit()
 result.resid.plot(kind='kde')
-plt.show()
+# plt.show()
 
 
 new_dates = [df_Unleaded95.index[-1]+DateOffset(days=x) for x in range(1, 180)]
@@ -111,12 +111,12 @@ df_Unleaded95_pred = pd.DataFrame(
 print(df_Unleaded95_pred.head())
 
 df2 = pd.concat([df_Unleaded95, df_Unleaded95_pred])
-# we have 198 rows that's why we start at 199
-df2['predictions'] = result.predict(start=1600,end=2000)
+
+df2['predictions'] = result.predict(start=1600,end=1742)
 df2[['unleaded_95', 'predictions']].plot()
 plt.show()
 
 
-print(df_Unleaded95.tail(30))
+# print(df_Unleaded95.tail(30))
 
-print(df2)
+# print(df2)
