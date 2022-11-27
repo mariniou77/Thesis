@@ -111,7 +111,7 @@ df_Unleaded95_pred = pd.DataFrame(
 print(df_Unleaded95_pred.head())
 
 df2 = pd.concat([df_Unleaded95, df_Unleaded95_pred])
-
+# we have 198 rows that's why we start at 199
 df2['predictions'] = result.predict(start=1600,end=1742)
 df2[['unleaded_95', 'predictions']].plot()
 plt.show()
