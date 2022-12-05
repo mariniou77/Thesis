@@ -1,11 +1,12 @@
+# https://www.youtube.com/watch?v=pryXhOgDY9A
+
 from statsmodels.tsa.stattools import adfuller
-import numpy as np, pandas as pd
+import numpy as np
+import pandas as pd
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import matplotlib.pyplot as plt
-import statsmodels.api as sm
-from statsmodels.graphics.tsaplots import plot_predict 
-
-plt.rcParams.update({'figure.figsize':(9,7), 'figure.dpi':120})
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.tsa.arima.model import ARIMA
 
 # kafsimo = str(sys.argv[1])
 # nomos = str(sys.argv[2])
@@ -13,11 +14,37 @@ plt.rcParams.update({'figure.figsize':(9,7), 'figure.dpi':120})
 
 kafsimo = 'unleaded_95'
 nomos = 'ΝΟΜΟΣ_ΑΡΤΗΣ'
-periodos = 6
+periodos = 180
 
 print(kafsimo)
 print(nomos)
 print(periodos)
+
+def differencing_parameter(training_set):
+    
+    first_diff = adfuller(training_set)
+    second_diff = adfuller(training_set)
+
+    if ((first_diff[1] > 0.05) and (second_diff[1] > 0.05)): 
+        d = 2
+    elif((first_diff[1] > 0.05) and (second_diff[1] <= 0.05)):
+        d =1 
+    else: 
+        d = 0 
+        
+    return d 
+
+# def previous_prediction(training_set, periodos):
+
+#     for i in range(n_test_obser):
+#         d = differencing_parameter(trainning_set)    
+#         model = ARIMA(trainning_set, order=(1, 2, d))
+#         model_fit = model.fit()
+#         output = model_fit.forecast()
+#         yhat = output[0]
+#         model_existing_predictions.append(yhat)
+#         actual_test_value = testing_set[i]
+#         trainning_set.append(actual_test_value)
 
 df = pd.read_csv("Data/prices.csv", low_memory=False)
 
@@ -27,67 +54,40 @@ df['validation'] = df['validation'].str.replace(' ', '_')
 df = df.loc[df['validation'] == nomos]
 
 # kratao mono tis stiles pou thelo gia to modelo
-df = df[["record_date",
+df = df[["price_date",
         kafsimo]]
 
-# theto os index tin imerominia
-df.set_index('record_date', inplace=True)
+df["price_date"] = pd.to_datetime(df["price_date"], dayfirst=True)
 
-df = df.sort_values(by=['record_date'])
+# theto os index tin imerominia
+# df.set_index('price_date', inplace=True)
+
+df = df.sort_values(by=['price_date'])
 
 print(df.head(15))
+print(len(df))
+print(int(len(df)*0.8))
+# xwrizw to set mou se training_set kai testing_set
+to_row = int(len(df)*0.8)
+trainning_set = list(df[0:to_row][kafsimo])
+testing_set = list(df[to_row:][kafsimo])
 
-result = adfuller(df[kafsimo].dropna())
-print('ADF Statistic: %f' % result[0])
-print('p-value: %f' % result[1])
+model_existing_predictions = []
+model_future_predictions = []
+n_test_obser = len(testing_set)
 
-result = adfuller(df[kafsimo].diff().diff().dropna())
-print('ADF Statistic: %f' % result[0])
-print('p-value: %f' % result[1])
+for i in range(n_test_obser):
+    d = differencing_parameter(trainning_set)    
+    model = ARIMA(trainning_set, order=(1, 2, d))
+    model_fit = model.fit()
+    output = model_fit.forecast()
+    yhat = output[0]
+    model_future_predictions.append(yhat)
+    actual_test_value = testing_set[i]
+    trainning_set.append(actual_test_value) 
 
+# print(output[0])       
 
-# Original Series
-fig, axes = plt.subplots(3, 2, sharex=True)
-axes[0, 0].plot(df[kafsimo]); axes[0, 0].set_title('Original Series')
-plot_acf(df[kafsimo], ax=axes[0, 1])
-
-# 1st Differencing
-axes[1, 0].plot(df[kafsimo].diff()); axes[1, 0].set_title('1st Order Differencing')
-plot_acf(df[kafsimo].diff().dropna(), ax=axes[1, 1])
-
-# 2nd Differencing
-axes[2, 0].plot(df[kafsimo].diff().diff()); axes[2, 0].set_title('2nd Order Differencing')
-plot_acf(df[kafsimo].diff().diff().dropna(), ax=axes[2, 1])
-
-plt.show()
-
-fig, axes = plt.subplots(1, 2, sharex=True)
-axes[0].plot(df[kafsimo].diff()); axes[0].set_title('1st Differencing')
-axes[1].set(ylim=(0,5))
-plot_pacf(df[kafsimo].diff().dropna(), ax=axes[1])
-
-plt.show()
-
-fig, axes = plt.subplots(1, 2, sharex=True)
-axes[0].plot(df[kafsimo].diff()); axes[0].set_title('1st Differencing')
-axes[1].set(ylim=(0,1.2))
-plot_acf(df[kafsimo].diff().dropna(), ax=axes[1])
-
-plt.show()
-
-# 1,1,2 ARIMA Model
-model = sm.tsa.arima.ARIMA(df, order=(1,1,1))
-model_fit = model.fit()
-print(model_fit.summary())
-
-# Plot residual errors
-residuals = pd.DataFrame(model_fit.resid)
-fig, ax = plt.subplots(1,2)
-residuals.plot(title="Residuals", ax=ax[0])
-residuals.plot(kind='kde', title='Density', ax=ax[1])
-plt.show()
-
-fig, ax = plt.subplots()
-ax = df.loc['2018-01-01':].plot(ax=ax)
-plot_predict(model_fit, '2018-01-01', '2022-02-07', ax=ax)
-plt.show()
+print(model_fit.summary())       
+print(model_future_predictions)
+print(trainning_set[1024:])

@@ -57,10 +57,10 @@ plt.show()
 
 
 # model = sm.tsa.arima.ARIMA(df_Unleaded95['unleaded_95'], order=(1,2,1))
-model=SARIMAX(df_Unleaded95['unleaded_95'],order=(1,2,1),seasonal_order=(1, 0, 0, 12))
-result = model.fit()
-result.resid.plot(kind='kde')
-result.summary()
+model = SARIMAX(df["unleaded_95"].dropna(), order=(2,1,1), trend='c')
+results = model.fit()
+future_forecast = results.get_forecast(steps=180).predicted_mean
+df_forecast = future_forecast.to_frame()
 plt.show()
 
 # fig, ax = plt.subplots()

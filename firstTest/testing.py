@@ -98,8 +98,7 @@ fig2 = plot_pacf(df_Unleaded95['1difference'].dropna())
 # fig2 = plot_pacf(df_Unleaded95['Seasonal_Difference'].dropna())
 # plt.show()
 
-model = SARIMAX(df_Unleaded95['unleaded_95'], order=(
-    1, 2, 1), seasonal_order=(1, 0, 0, 12))
+model = SARIMAX(df["unleaded_95"].dropna(), order=(2,1,1), trend='c')
 result = model.fit()
 result.resid.plot(kind='kde')
 # plt.show()
@@ -112,7 +111,7 @@ print(df_Unleaded95_pred.head())
 
 df2 = pd.concat([df_Unleaded95, df_Unleaded95_pred])
 # we have 198 rows that's why we start at 199
-df2['predictions'] = result.predict(start=1600,end=1742)
+df2['predictions'] = result.get_forecast(start=1600,end=1800).predict_mean
 df2[['unleaded_95', 'predictions']].plot()
 plt.show()
 
