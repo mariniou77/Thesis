@@ -34,17 +34,17 @@ def differencing_parameter(training_set):
         
     return d 
 
-# def previous_prediction(training_set, periodos):
+def previous_prediction(training_set, periodos):
 
-#     for i in range(n_test_obser):
-#         d = differencing_parameter(trainning_set)    
-#         model = ARIMA(trainning_set, order=(1, 2, d))
-#         model_fit = model.fit()
-#         output = model_fit.forecast()
-#         yhat = output[0]
-#         model_existing_predictions.append(yhat)
-#         actual_test_value = testing_set[i]
-#         trainning_set.append(actual_test_value)
+    for i in range(n_test_obser):
+        d = differencing_parameter(trainning_set)    
+        model = ARIMA(trainning_set, order=(1, 2, d))
+        model_fit = model.fit()
+        output = model_fit.forecast()
+        yhat = output[0]
+        model_existing_predictions.append(yhat)
+        actual_test_value = testing_set[i]
+        trainning_set.append(actual_test_value)
 
 df = pd.read_csv("Data/prices.csv", low_memory=False)
 
