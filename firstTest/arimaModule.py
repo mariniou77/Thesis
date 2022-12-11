@@ -29,12 +29,13 @@ df['validation'] = df['validation'].str.replace(' ', '_')
 df = df.loc[df['validation'] == nomos]
 
 # kratao mono tis stiles pou thelo gia to modelo
-df = df[["record_date",
-        kafsimo]]
-
-# theto os index tin imerominia
-# df.set_index('record_date', inplace=True)
+df = df[["record_date", kafsimo]]
 df["record_date"] = pd.to_datetime(df["record_date"], dayfirst=True)
-
 df = df.sort_values(by=['record_date'])
 
+# fill the missing dates of the dataframe
+dm = df
+dm.set_index('record_date', inplace=True)
+idx = pd.date_range(dm.index.min(), dm.index.max())
+dm.index = pd.DatetimeIndex(dm.index)
+dm = dm.reindex(idx)
