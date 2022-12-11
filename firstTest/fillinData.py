@@ -1,17 +1,8 @@
-# https://github.com/ggagnon1995/ARIMA_Algorithm/blob/main/ARIMA%20Algorithm.ipynb 
+# https://analyticsindiamag.com/complete-guide-to-sarimax-in-python-for-time-series-modeling/  
 
 import pandas as pd
-import sys
 import matplotlib.pyplot as plt
-from statsmodels.tsa.stattools import adfuller
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from statsmodels.tsa.statespace.sarimax import SARIMAX
 import statsmodels.api as sm
-from pandas.tseries.offsets import DateOffset
- 
-# kafsimo = str(sys.argv[1])
-# nomos = str(sys.argv[2])
-# periodos = int(sys.argv[3])
 
 kafsimo = 'unleaded_95'
 nomos = 'ΝΟΜΟΣ_ΑΡΤΗΣ'
@@ -40,11 +31,27 @@ idx = pd.date_range(dm.index.min(), dm.index.max())
 dm.index = pd.DatetimeIndex(dm.index)
 dm = dm.reindex(idx)
 
-df.plot()
-plt.show()
+# df.plot()
+# plt.show()
 
-dm.plot()
-plt.show()
+# before the Interpolation
+# dm.plot()
+# plt.show()
 
 #Interpolate in forward order across the column:
 dm.interpolate(method ='linear', limit_direction ='forward', inplace=True)
+
+# after the Interpolation
+# dm.plot()
+# plt.show()
+
+# searching for seasonality
+dh = dm.asfreq('M') #for daily resampled data and fillnas with appropriate method
+decomposition = sm.tsa.seasonal_decompose(dh[kafsimo], model='additive', 
+                            extrapolate_trend='freq') #additive or multiplicative is data specific
+fig = decomposition.plot()
+plt.show()
+
+seasonality=decomposition.seasonal
+seasonality.plot(color='green')
+plt.show()
