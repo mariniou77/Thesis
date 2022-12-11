@@ -78,7 +78,7 @@ n_test_obser = len(testing_set)
 
 for i in range(n_test_obser):
     d = differencing_parameter(trainning_set)    
-    model = ARIMA(trainning_set, order=(1, 2, d))
+    model = ARIMA(trainning_set, order=(1, d, 1))
     model_fit = model.fit()
     output = model_fit.forecast()
     yhat = output[0]
