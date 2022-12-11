@@ -39,3 +39,12 @@ dm.set_index('record_date', inplace=True)
 idx = pd.date_range(dm.index.min(), dm.index.max())
 dm.index = pd.DatetimeIndex(dm.index)
 dm = dm.reindex(idx)
+
+df.plot()
+plt.show()
+
+dm.plot()
+plt.show()
+
+#Interpolate in forward order across the column:
+dm.interpolate(method ='linear', limit_direction ='forward', inplace=True)
