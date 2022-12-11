@@ -1,121 +1,139 @@
-# https://towardsdatascience.com/arima-model-in-python-7bfc7fb792f9
-
-import pandas as pd
-import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
+from numpy import log
+import numpy as np, pandas as pd
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import matplotlib.pyplot as plt
+from pmdarima.arima.utils import ndiffs
+from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from pandas.tseries.offsets import DateOffset
+from statsmodels.graphics.tsaplots import plot_predict
+from statsmodels.tsa.stattools import acf
 
+plt.rcParams.update({'figure.figsize':(9,7), 'figure.dpi':120})
+
+kafsimo = 'unleaded_95'
+nomos = 'ΝΟΜΟΣ_ΑΡΤΗΣ'
+periodos = 180
+
+print(kafsimo)
+print(nomos)
+print(periodos)
+# Import data
 df = pd.read_csv("Data/prices.csv", low_memory=False)
-print(df.head(30))
 
-df["price_date"] = pd.to_datetime(df["price_date"], dayfirst=True)
+df['validation'] = df['validation'].str.replace(' ', '_')
 
-# vrisko oles tis egkrafes gia ton nomo atikis
-df_Unleaded95 = df.loc[df['county_code'] == 1]
+df = df.loc[df['validation'] == nomos]
 
-# kratao mono tis stiles pou thelo gia to modelo
-df_Unleaded95 = df_Unleaded95[["price_date",
-                               "unleaded_95"]]
+df = df[["record_date",
+        kafsimo]]
 
-# theto os index tin imerominia
-df_Unleaded95.set_index('price_date', inplace=True)
+df = df.reset_index()
+df = df.drop(columns=['index'])
+df.record_date = pd.to_datetime(df.record_date)
 
-df = df.sort_values(by=['price_date'])
+# Original Series
+fig, axes = plt.subplots(3, 2, sharex=True)
+axes[0, 0].plot(df[kafsimo]); axes[0, 0].set_title('Original Series')
+plot_acf(df[kafsimo], ax=axes[0, 1])
 
-print(df_Unleaded95.head(30))
+# 1st Differencing
+axes[1, 0].plot(df[kafsimo].diff()); axes[1, 0].set_title('1st Order Differencing')
+plot_acf(df[kafsimo].diff().dropna(), ax=axes[1, 1])
 
-# to geniko plot ton timon gia ton nomo atikis ana ta xronia
-# basi tou plot tsekaro an einai stationary ta data mou
-df_Unleaded95.plot()
-# plt.show()
+# 2nd Differencing
+axes[2, 0].plot(df[kafsimo].diff().diff()); axes[2, 0].set_title('2nd Order Differencing')
+plot_acf(df[kafsimo].diff().diff().dropna(), ax=axes[2, 1])
 
-# gia na eimai sigouros gia to stationary tsekaro to p-value < 0.05 (null hypothesis)
-result = adfuller(df_Unleaded95['unleaded_95'])
-print(dict(zip(['adf',
-                'pvalue',
-                'usedlag',
-                'nobs',
-                'critical' 'values',
-                'icbest'],
-               result)))
+plt.show()
+result = adfuller(df[kafsimo].dropna())
+print('ADF Statistic: %f' % result[0])
+print('p-value: %f' % result[1])
 
-# Transform Non-Stationary to Stationary using Differencing (difference(T) = observation(T) — observation(T-1))
-df_Unleaded95['1difference'] = df_Unleaded95['unleaded_95'] - \
-    df_Unleaded95['unleaded_95'].shift(1)
-df_Unleaded95['1difference'].plot()
+y = df[kafsimo]
+
+## Adf Test
+ndiffs(y, test='adf')  # 2
+
+# KPSS test
+ndiffs(y, test='kpss')  # 0
+
+# PP test:
+ndiffs(y, test='pp')  # 2
+
+# PACF plot of 1st differenced series
+plt.rcParams.update({'figure.figsize':(9,3), 'figure.dpi':120})
+
+fig, axes = plt.subplots(1, 2, sharex=True)
+axes[0].plot(df[kafsimo].diff()); axes[0].set_title('1st Differencing')
+axes[1].set(ylim=(0,5))
+plot_pacf(df[kafsimo].diff().dropna(), ax=axes[1])
+
 plt.show()
 
-# tsekaro xana to p-value an einai < 0.05. an den einai sinexizo to tranformation mexri na einai
-result = adfuller(df_Unleaded95['1difference'].dropna())
-print(dict(zip(['adf',
-                'pvalue',
-                'usedlag',
-                'nobs',
-                'critical' 'values',
-                'icbest'],
-               result)))
+plt.rcParams.update({'figure.figsize':(9,3), 'figure.dpi':120})
 
+fig, axes = plt.subplots(1, 2, sharex=True)
+axes[0].plot(df[kafsimo].diff()); axes[0].set_title('1st Differencing')
+axes[1].set(ylim=(0,1.2))
+plot_acf(df[kafsimo].diff().dropna(), ax=axes[1])
 
-# df_Unleaded95['Seasonal_Difference'] = df_Unleaded95['unleaded_95'] - \
-#     df_Unleaded95['unleaded_95'].shift(1741)
-# df_Unleaded95['Seasonal_Difference'].plot()
-# plt.show()
-
-# result = adfuller(df_Unleaded95['Seasonal_Difference'].dropna())
-# print(dict(zip(['adf',
-#                 'pvalue',
-#                 'usedlag',
-#                 'nobs',
-#                 'critical' 'values',
-#                 'icbest'],
-#                result)))
-
-# df_Unleaded95['1Seasonal_Difference'] = df_Unleaded95['Seasonal_Difference'] - \
-#     df_Unleaded95['Seasonal_Difference'].shift(1)
-# df_Unleaded95['1Seasonal_Difference'].plot()
-# plt.show()
-
-# # tsekaro xana to p-value an einai < 0.05. an den einai sinexizo to tranformation mexri na einai
-# result = adfuller(df_Unleaded95['1difference'].dropna())
-# print(dict(zip(['adf',
-#                 'pvalue',
-#                 'usedlag',
-#                 'nobs',
-#                 'critical' 'values',
-#                 'icbest'],
-#                result)))
-
-fig1 = plot_acf(df_Unleaded95['1difference'].dropna())
-plt.show()
-fig2 = plot_pacf(df_Unleaded95['1difference'].dropna())
-# plt.show()
-
-
-# fig1 = plot_acf(df_Unleaded95['Seasonal_Difference'].dropna())
-# plt.show()
-# fig2 = plot_pacf(df_Unleaded95['Seasonal_Difference'].dropna())
-# plt.show()
-
-model = SARIMAX(df["unleaded_95"].dropna(), order=(2,1,1), trend='c')
-result = model.fit()
-result.resid.plot(kind='kde')
-# plt.show()
-
-
-new_dates = [df_Unleaded95.index[-1]+DateOffset(days=x) for x in range(1, 180)]
-df_Unleaded95_pred = pd.DataFrame(
-    index=new_dates, columns=df_Unleaded95.columns)
-print(df_Unleaded95_pred.head())
-
-df2 = pd.concat([df_Unleaded95, df_Unleaded95_pred])
-# we have 198 rows that's why we start at 199
-df2['predictions'] = result.get_forecast(start=1600,end=1800).predict_mean
-df2[['unleaded_95', 'predictions']].plot()
 plt.show()
 
+# 1,1,2 ARIMA Model
+model = SARIMAX(df[kafsimo], order=(2,1,1))
+model_fit = model.fit(disp=0)
+print(model_fit.summary())
 
-# print(df_Unleaded95.tail(30))
+# Plot residual errors
+residuals = pd.DataFrame(model_fit.resid)
+fig, ax = plt.subplots(1,2)
+residuals.plot(title="Residuals", ax=ax[0])
+residuals.plot(kind='kde', title='Density', ax=ax[1])
+plt.show()
 
-# print(df2)
+plot_predict(model_fit, 1280, 1400)
+plt.show()
+
+train = df[kafsimo][:1280-periodos]
+test = df[kafsimo][1280-periodos:]
+
+model = SARIMAX(train, order=(1, 1, 1))  
+fitted = model.fit(disp=-1)  
+
+# Forecast
+fc = fitted.forecast(periodos, alpha=0.05)  # 95% conf
+
+# Make as pandas series
+fc_series = pd.Series(fc, index=test.index)
+lower_series = pd.Series(conf[:, 0], index=test.index)
+upper_series = pd.Series(conf[:, 1], index=test.index)
+
+# Plot
+plt.figure(figsize=(12,5), dpi=100)
+plt.plot(train, label='training')
+plt.plot(test, label='actual')
+plt.plot(fc_series, label='forecast')
+plt.title('Forecast vs Actuals')
+plt.legend(loc='upper left', fontsize=8)
+plt.show()
+
+################################
+
+model = SARIMAX(df[kafsimo], order=(1, 1, 1))  
+fitted = model.fit(disp=-1)  
+
+# Forecast
+fc = fitted.forecast(periodos, alpha=0.05)  # 95% conf
+
+# Make as pandas series
+fc_series = pd.Series(fc, index=test.index)
+
+# Plot
+plt.figure(figsize=(12,5), dpi=100)
+plt.plot(df[kafsimo], label='training')
+# plt.plot(test, label='actual')
+plt.plot(fc_series, label='forecast')
+plt.title('Forecast vs Actuals')
+plt.legend(loc='upper left', fontsize=8)
+plt.show()
