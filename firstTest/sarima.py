@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from statsmodels.tsa.statespace.sarimax import SARIMAX
+# from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.arima_model import ARIMA
 import statsmodels.api as sm
 from pandas.tseries.offsets import DateOffset
@@ -14,9 +14,37 @@ from pandas.tseries.offsets import DateOffset
 # nomos = str(sys.argv[2])
 # periodos = int(sys.argv[3])
 
+def differencing_parameter(df):
+    
+    first_diff = adfuller(df[kafsimo].dropna())
+    second_diff = adfuller(df[kafsimo].diff().dropna())
+
+    if ((first_diff[1] > 0.05) and (second_diff[1] > 0.05)): 
+        d = 2
+    elif((first_diff[1] > 0.05) and (second_diff[1] <= 0.05)):
+        d =1 
+    else: 
+        d = 0 
+        
+    return d 
+
+def differencing_parameter_seasonal(df):
+    
+    first_diff = adfuller(df[kafsimo].diff(12).dropna())
+    second_diff = adfuller(df[kafsimo].diff(12).diff().dropna())
+
+    if ((first_diff[1] > 0.05) and (second_diff[1] > 0.05)): 
+        d = 2
+    elif((first_diff[1] > 0.05) and (second_diff[1] <= 0.05)):
+        d =1 
+    else: 
+        d = 0 
+        
+    return d 
+
 kafsimo = 'unleaded_95'
 nomos = 'ΝΟΜΟΣ_ΑΡΤΗΣ'
-periodos = 600
+periodos = 180
 
 print(kafsimo)
 print(nomos)
@@ -34,18 +62,15 @@ df = df[["record_date", kafsimo]]
 df["record_date"] = pd.to_datetime(df["record_date"], dayfirst=True)
 df = df.sort_values(by=['record_date'])
 
+second_diff = adfuller(df[kafsimo].diff(12).dropna())
+print(second_diff[1])
+
 # fill the missing dates of the dataframe
 dm = df
 dm.set_index('record_date', inplace=True)
 idx = pd.date_range(dm.index.min(), dm.index.max())
 dm.index = pd.DatetimeIndex(dm.index)
 dm = dm.reindex(idx)
-
-# df.plot()
-# plt.show()
-
-# dm.plot()
-# plt.show()
 
 #Interpolate in forward order across the column:
 dm.interpolate(method ='linear', limit_direction ='forward', inplace=True)
@@ -61,61 +86,39 @@ seasonality=decomposition.seasonal
 seasonality.plot(color='green')
 plt.show()
 
-dftest = adfuller(dm[kafsimo], autolag = 'AIC')
-print("1. ADF : ",dftest[0])
-print("2. P-Value : ", dftest[1])
-print("3. Num Of Lags : ", dftest[2])
-print("4. Num Of Observations Used For ADF Regression and Critical Values Calculation :", dftest[3])
-print("5. Critical Values :")
-for key, val in dftest[4].items():
-    print("\t",key, ": ", val)
+#####################################################################################################
+#### PREVIOUS PREDICTION ####
 
-# checking the d parameter
-# first try
-rolling_mean = dm.rolling(window = 12).mean()
-dm['rolling_mean_diff'] = rolling_mean - rolling_mean.shift()
-ax1 = plt.subplot()
-dm['rolling_mean_diff'].plot(title='after rolling mean & differencing')
-ax2 = plt.subplot()
-dm.plot(title='original')
+t_dm = dm
+split_value = dm.size - periodos
+training_dm = dm.iloc[:split_value, :]
 
-dftest = adfuller(dm['rolling_mean_diff'].dropna(), autolag = 'AIC')
-print("1. ADF : ",dftest[0])
-print("2. P-Value : ", dftest[1])
-print("3. Num Of Lags : ", dftest[2])
-print("4. Num Of Observations Used For ADF Regression and Critical Values Calculation :", dftest[3])
-print("5. Critical Values :")
-for key, val in dftest[4].items():
-  print("\t",key, ": ", val)
+e_d = differencing_parameter(training_dm)
+e_dD = differencing_parameter_seasonal(training_dm)
 
-# trying ARIMA model
-model=sm.tsa.arima.ARIMA(dm[kafsimo], order=(1,1,1))
-history=model.fit()
+existing_model=sm.tsa.statespace.SARIMAX(training_dm[kafsimo],order=(1, e_d, 1),seasonal_order=(6,e_dD,1,12))
+existing_results = existing_model.fit()
 
-history.summary()
+t_dm['forecast'] = existing_results.predict(start = split_value, end = t_dm.size, dynamic= True)  
+t_dm[[kafsimo, 'forecast']].plot(figsize=(12, 8))
+plt.show()
 
-dm['forecast']=history.predict(start=1000,end=1279,dynamic=True)
-dm[[kafsimo,'forecast']].plot(figsize=(12,8))
 
-# stationar data given
-model=sm.tsa.arima.ARIMA(dm['rolling_mean_diff'].dropna(),order=(1,1,1))
-model_fit=model.fit()
-
-dm['forecast2']=model_fit.predict(start=1000,end=1279,dynamic=True)
-dm[['rolling_mean_diff','forecast2']].plot(figsize=(12,8))
-
+#####################################################################################################
+#### FUTURE PREDICTION ####
 # SARIMAX
-model=sm.tsa.statespace.SARIMAX(dm[kafsimo],order=(1, 1, 1),seasonal_order=(6,1,1,12))
-results=model.fit()
-
-dm['forecast']=results.predict(start=900,end=1030,dynamic=True)
-dm[[kafsimo,'forecast']].plot(figsize=(12,8))
+f_d = differencing_parameter(dm)
+f_dD = differencing_parameter_seasonal(dm)
+future_model=sm.tsa.statespace.SARIMAX(dm[kafsimo],order=(1, f_d, 1),seasonal_order=(6,f_dD,1,12))
+future_results = future_model.fit()
 
 # Making a NAN value future dataset
-pred_date=[dm.index[-1]+ DateOffset(days=x) for x in range(0,periodos)]
-pred_date=pd.DataFrame(index=pred_date[1:],columns=dm.columns)
+pred_date = [dm.index[-1]+ DateOffset(days=x) for x in range(0,periodos)]
+pred_date = pd.DataFrame(index=pred_date[1:],columns=dm.columns)
 
 data=pd.concat([dm,pred_date])
-data['forecast'] = results.predict(start = 1760, end = 2200, dynamic= True)  
+p_start = dm.size
+p_end = dm.size + periodos
+data['forecast'] = future_results.predict(start = p_start, end = p_end, dynamic= True)  
 data[[kafsimo, 'forecast']].plot(figsize=(12, 8))
 plt.show()
