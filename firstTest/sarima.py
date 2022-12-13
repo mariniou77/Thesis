@@ -44,7 +44,7 @@ def differencing_parameter_seasonal(df):
 
 kafsimo = 'unleaded_95'
 nomos = 'ΝΟΜΟΣ_ΑΡΤΗΣ'
-periodos = 90
+periodos = 30
 
 print(kafsimo)
 print(nomos)

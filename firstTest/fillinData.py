@@ -2,10 +2,9 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import statsmodels.api as sm
 
 kafsimo = 'unleaded_95'
-nomos = 'ΝΟΜΟΣ_ΑΡΤΗΣ'
+nomos = 'ΝΟΜΟΣ_ΔΩΔΕΚΑΝΗΣΟΥ'
 periodos = 600
 
 print(kafsimo)
@@ -35,23 +34,12 @@ dm = dm.reindex(idx)
 # plt.show()
 
 # before the Interpolation
-# dm.plot()
-# plt.show()
+dm.plot()
+plt.show()
 
 #Interpolate in forward order across the column:
 dm.interpolate(method ='linear', limit_direction ='forward', inplace=True)
 
 # after the Interpolation
-# dm.plot()
-# plt.show()
-
-# searching for seasonality
-dh = dm.asfreq('M') #for daily resampled data and fillnas with appropriate method
-decomposition = sm.tsa.seasonal_decompose(dh[kafsimo], model='additive', 
-                            extrapolate_trend='freq') #additive or multiplicative is data specific
-fig = decomposition.plot()
-plt.show()
-
-seasonality=decomposition.seasonal
-seasonality.plot(color='green')
+dm.plot()
 plt.show()
