@@ -43,3 +43,23 @@ dm.interpolate(method ='linear', limit_direction ='forward', inplace=True)
 # after the Interpolation
 dm.plot()
 plt.show()
+
+################################################################################################
+# check that to see if I can automate the p and q values
+
+# order_aic_bic =[]
+#     # Loop over AR order
+# for p in range(8):
+#     # Loop over MA order
+#     for q in range(8):
+#         # Fit models
+#         model = SARIMAX(df['close'].dropna(), order=(p,d,q), trend='c')
+#         results = model.fit()
+#         # Add order and statistics to list
+#         order_aic_bic.append((p, d, q, results.aic, results.bic))
+    
+# # Save parameters to a data frame 
+# order_df = pd.DataFrame(order_aic_bic, columns=['p','d','q', 'aic', 'bic'])
+    
+# # Select the parameters with the lowest AIC 
+# parameter_df = order_df.loc[(order_df['aic'] == order_df['aic'].min())]
