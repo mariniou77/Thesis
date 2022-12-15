@@ -44,7 +44,7 @@ def differencing_parameter_seasonal(df):
 
 kafsimo = 'unleaded_95'
 nomos = 'ΝΟΜΟΣ_ΑΡΤΗΣ'
-periodos = 30
+periodos = 90
 
 print(kafsimo)
 print(nomos)
@@ -94,6 +94,25 @@ training_dm = dm.iloc[:split_value, :]
 e_d = differencing_parameter(training_dm)
 e_dD = differencing_parameter_seasonal(training_dm)
 
+
+############################## maybe automate the p and q ######################################
+# order_aic_bic =[]
+#     # Loop over AR order
+# for p in range(8):
+#     # Loop over MA order
+#     for q in range(8):
+#         # Fit models
+#         model = sm.tsa.statespace.SARIMAX(training_dm[kafsimo].dropna(), order=(p,e_d,q), trend='c')
+#         results = model.fit()
+#         # Add order and statistics to list
+#         order_aic_bic.append((p, e_d, q, results.aic, results.bic))
+    
+# # Save parameters to a data frame 
+# order_df = pd.DataFrame(order_aic_bic, columns=['p','d','q', 'aic', 'bic'])
+    
+# # Select the parameters with the lowest AIC 
+# parameter_df = order_df.loc[(order_df['aic'] == order_df['aic'].min())]
+
 existing_model=sm.tsa.statespace.SARIMAX(training_dm[kafsimo],order=(1, e_d, 1),seasonal_order=(6,e_dD,1,12))
 # existing_model=sm.tsa.arima.ARIMA(training_dm[kafsimo],order=(1, e_d, 1))
 existing_results = existing_model.fit()
@@ -132,3 +151,4 @@ data['future_forecast'] = future_results.predict(start = p_start, end = p_end, d
 
 data[[kafsimo, 'future_forecast', 'existing_forecast']].plot(figsize=(12, 8))
 plt.show()
+
